@@ -1,1 +1,1 @@
-# stackExchangeTagPrediction
+# StackExchange Tag Prediction
