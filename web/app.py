@@ -92,9 +92,9 @@ if __name__ == '__main__':
     #classifiers = {}
     #for keyn in keyNum:
     #    classifiers[keyn] = joblib.load('data/SGD_key_'+str(keyn)+'_c.pkl')
-    #s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    #s.connect(('8.8.8.8', 80))
-    #ip = s.getsockname()[0]
-    #s.close()
-    #app.run(host=ip)
-    app.run()
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.connect(('8.8.8.8', 80))
+    ip = s.getsockname()[0]
+    s.close()
+    app.run(host=ip)
+    #app.run()
