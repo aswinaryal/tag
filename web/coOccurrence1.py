@@ -38,6 +38,42 @@ def tagProbSGD(tagIdx,textToken):
     print 'mean sgd prob:', mp
     return tagProb
 
+def tagProbSGDset(tagIdx,setNum=3,typ='cv'):
+    opt = 'body+title+code'
+    totalKeys = 1000
+    testopt = 'l3'
+    datastr=typ+str(setNum)
+    n=tagIdx.shape[0]
+    nkey=tagIdx.shape[1]
+    ntask=n*nkey
+    tagProb=np.zeros((n, nkey))
+    fn = 'hvec_'+datastr+'.pkl'
+    with open(fn, 'rb') as infile:
+        hvec = pickle.load(infile)
+    tIdxn1=np.nonzero(tagIdx==-1)
+    nt0=len(tIdxn1[0])
+    for k in xrange(totalKeys):
+        tIdx=np.nonzero(tagIdx==k)
+        nt=len(tIdx[0])
+        if nt > 0:
+            cls = joblib.load('data/SGD_key_'+str(k)+'_'+testopt+'.pkl')
+            yp=cls.predict_proba(hvec)
+            tagProb[tIdx]=yp[tIdx[0],1]
+        nt0 += nt
+        if nt0 == ntask:
+            break
+    if nt0 < ntask:
+        #keywords beyond top 1000 keys
+        tIdx=np.nonzero(tagProb)
+        mp=tagProb[tIdx].mean()
+        tIdx=np.nonzero(tagProb==0)
+        tagProb[tIdx]=mp
+        tagProb[tIdxn1]=0
+        print 'mean sgd prob:', mp, ntask-nt0, ntask
+
+    return tagProb
+
+
 def getWords(part,norm=None):
     mincount, maxcount=minWordCount(part)
     words = defaultdict(int)
@@ -128,6 +164,77 @@ def getTestVec(part,textToken,stopword=None):
     wvec=vectorizer.transform(text)
     return wvec
 
+def tagAccuracy(tagIdx,xtag):
+    ntag=tagIdx.shape[1]
+    ntest=tagIdx.shape[0]
+    accu=np.zeros((ntest, ntag))
+    for i, d in xtag.items():
+        for j in xrange(ntag):
+            if tagIdx[i,j] in d:
+                accu[i,j]=1
+    return accu
+
+def singleTagAccuracy(typ='test',setNum=1,nset=46,npred=20):
+    parts = ['title','body','code']
+    stopword = [None, 'v1', 'v1']
+    weight = [1.0, 1.0, 1.0]
+    sgdWt = 1.0
+    sa=np.zeros(4)
+    with open('data/xtag_'+typ+str(setNum)+'.pkl', 'rb') as infile:
+        xtag = pickle.load(infile)
+    for m, part in enumerate(parts):
+        datastr=typ+str(setNum)
+        if stopword[m] == 'v1':
+            datastr+='sw1'
+        opt='n'+str(nset)+'t'+str(npred)+datastr
+        fn1 = 'data/'+part+'_tagProb_'+opt+'.pkl'
+        fn2 = 'data/'+part+'_tagIdx_'+opt+'.pkl'
+        with open(fn1, 'rb') as infile:
+            if m==0:
+                tagProb1 = pickle.load(infile)
+                n=tagProb1.shape[0]
+            else:
+                tagProb = pickle.load(infile)
+        with open(fn2, 'rb') as infile:
+            if m==0:
+                tagIdx1 = pickle.load(infile)
+            else:
+                tagIdx = pickle.load(infile)
+        if m>0:
+            tagProb1 = np.hstack((tagProb1,weight[m]*tagProb))
+            tagIdx1 = np.hstack((tagIdx1,tagIdx))
+        for j in xrange(n):
+            idxDict = defaultdict(int)
+            for i in xrange(npred):
+                idxDict[tagIdx1[j,i]]=i
+            for i in xrange(npred,(m+1)*npred):
+                idx=idxDict.get(tagIdx1[j,i])
+                if idx is None:
+                    if tagIdx1[j,i] != -1:
+                        idxDict[tagIdx1[j,i]]=i
+                else:
+                    tagIdx1[j,i]=-1
+                    tagProb1[j,idx]+=tagProb1[j,i]
+                    tagProb1[j,i]=-1
+            idx = np.argsort(-tagProb1[j,:])
+            tagIdx1[j,:]=tagIdx1[j,idx]
+            tagProb1[j,:]=tagProb1[j,idx]
+        accu = tagAccuracy(np.reshape(tagIdx1[:,0],(n,1)),xtag)
+        sa[m] = accu.mean()
+        print sa[m]
+
+    tagProbsgd1=tagProbSGDset(tagIdx1,setNum=setNum,typ=typ)
+    tagProb1 += sgdWt * tagProbsgd1
+    for j in xrange(n):
+        idx = np.argsort(-tagProb1[j,:])
+        tagIdx[j,:]=tagIdx1[j,idx[0:npred]]
+        tagProb[j,:]=tagProb1[j,idx[0:npred]]
+    accu = tagAccuracy(np.reshape(tagIdx[:,0],(n,1)),xtag)
+    sa[3] = accu.mean()
+    print sa[3]
+    #return sa
+
+
 def tagWordAssociationMultiCV(textToken,nset=40,sgd='',tit=''):
     npred=20
     parts = ['title','body','code']
@@ -204,3 +311,7 @@ def tagWordAssociationCV(part,textToken,nset=40,npred=20,stopword=None):
 
     tagProb, tagIdx = combineTag(part,nset,wvec,npred)
     return tagProb, tagIdx
+
+
+if __name__ == '__main__':
+    singleTagAccuracy()
