@@ -47,7 +47,7 @@ def tagProbSGDset(tagIdx,setNum=3,typ='cv'):
     nkey=tagIdx.shape[1]
     ntask=n*nkey
     tagProb=np.zeros((n, nkey))
-    fn = 'hvec_'+datastr+'.pkl'
+    fn = 'data/hvec_'+datastr+'.pkl'
     with open(fn, 'rb') as infile:
         hvec = pickle.load(infile)
     tIdxn1=np.nonzero(tagIdx==-1)
@@ -232,7 +232,7 @@ def singleTagAccuracy(typ='test',setNum=1,nset=46,npred=20):
     accu = tagAccuracy(np.reshape(tagIdx[:,0],(n,1)),xtag)
     sa[3] = accu.mean()
     print sa[3]
-    #return sa
+    return sa
 
 
 def tagWordAssociationMultiCV(textToken,nset=40,sgd='',tit=''):
@@ -249,7 +249,6 @@ def tagWordAssociationMultiCV(textToken,nset=40,sgd='',tit=''):
         parts = ['body']
         stopword = ['v1']
         npred = 10
-    print tit
     for i, part in enumerate(parts):
         if i==0:
             tagProb1, tagIdx1 = tagWordAssociationCV(part,textToken[i],nset=nset,npred=npred,stopword=stopword[i])
@@ -313,5 +312,3 @@ def tagWordAssociationCV(part,textToken,nset=40,npred=20,stopword=None):
     return tagProb, tagIdx
 
 
-if __name__ == '__main__':
-    singleTagAccuracy()
