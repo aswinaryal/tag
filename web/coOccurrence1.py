@@ -25,8 +25,8 @@ def tagProbSGD(tagIdx,textToken):
         k = tagIdx[0,i]
         if k < 0 or k >= totalKeys:
             continue
-        if k < 200:
-            cls = clsX.get[k]
+        if k < 400:
+            cls = clsX[k]
         else:
             cls = joblib.load('data/SGD_key_'+str(k)+'_'+testopt+'.pkl')
         yp = cls.predict_proba(hvec)
@@ -153,10 +153,10 @@ def initEnvironment():
         svmX[opt] = joblib.load('data/svc_'+opt+'.pkl')
 
     global clsX
-    print 'loading one-vs-all models'
+    print 'loading 400 one-vs-all models'
     clsX = {}
     testopt = 'l3'
-    for k in range(200):
+    for k in range(400):
         clsX[k] = joblib.load('data/SGD_key_'+str(k)+'_'+testopt+'.pkl')
 
 def tagProbability(part,keyn1,keyn2,wvec,ntag,i):
