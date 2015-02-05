@@ -4,7 +4,8 @@ import socket
 import requests
 import numpy as np
 from cleanData import body2Token, title2Token
-from coOccurrence1 import tagWordAssociationMultiCV
+from coOccurrence1 import tagWordAssociationMultiCV, initEnvironment
+import time
 
 #######################
 #### configuration ####
@@ -51,6 +52,7 @@ def index():
             return render_template('index.html', errors=errors)
         if raw or url:
             if url:
+                t1=time.time()
                 r = requests.get(url)
                 soup = BeautifulSoup(r.text)
                 trueTags = [t.text for t in soup.find('div', attrs={'class':'post-taglist'}).select('a')]
@@ -59,15 +61,19 @@ def index():
                 title = title2Token(titleStr)
                 body, code = body2Token(textStr)
                 answers = ', '.join(trueTags)
-                print answers
                 textToken=[]
                 textToken.append(list(set(title)))
                 textToken.append(list(set(body)))
                 textToken.append(list(set(code)))
                 tags = tagWordAssociationMultiCV(textToken, nset=30, sgd='sgd')
+                t2=time.time()
+                print t2-t1
             else:
+                t1=time.time()
                 text = list(set(title2Token(raw)))
                 tags = tagWordAssociationMultiCV([text], nset=8, sgd='', tit='body')
+                t2=time.time()
+                print t2-t1
             return render_template('index.html', results=tags, rawdata=raw, answers=answers, errors=errors)
             #X_test = vectorizer.transform([raw.lower()])
             #tagProb = []
@@ -92,6 +98,7 @@ if __name__ == '__main__':
     #classifiers = {}
     #for keyn in keyNum:
     #    classifiers[keyn] = joblib.load('data/SGD_key_'+str(keyn)+'_c.pkl')
+    initEnvironment()
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     s.connect(('8.8.8.8', 80))
     ip = s.getsockname()[0]
