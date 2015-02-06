@@ -8,7 +8,7 @@ from scipy.sparse import csr_matrix, lil_matrix
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.preprocessing import normalize
 import random
-from trainOneOOCpartial import tagProbSGD
+from trainOne import tagProbSGD
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import LinearSVC
 from sklearn.externals import joblib
